@@ -1,5 +1,33 @@
 P_AGENT_MAINTENANCE_WORKLOAD--生成代维人员工作量-供手机经分使用-每15min运行一次
 
+--pivot方法实例-但适用版本 < oracle 11g
+select *
+  from (select 代维公司,代维分局,姓名,类别,
+               to_char(trunc(sysdate) +
+                       30 / 1440 *
+                       ceil((操作时间 - trunc(sysdate)) / (30 / 1440)),
+                       'hh24:mi"前"') as 时间段
+          from yunwei.productivity@family t
+         where trunc(t.操作时间) = trunc(sysdate))
+ pivot(count(decode(类别,'故障',1,null)) as zj,count(decode(类别,'装机',1,null)) as wh for 时间段 in ('08:30前', '09:00前'));
+ 
+--利用循环打印查询条件
+begin
+  for i in 17 .. 48 loop
+    dbms_output.put_line('count(case when 时间段=''' ||
+                         to_char(trunc(sysdate) + 1 / 48 * i, 'hh24:mi') ||
+                         '前'' and 类别=''装机'' then 1 else null end) ' ||
+                         to_char(trunc(sysdate) + 1 / 48 * i, 'hh24mi') || '装机' ||
+                         to_char(i - 16) || ',');
+    dbms_output.put_line('count(case when 时间段=''' ||
+                         to_char(trunc(sysdate) + 1 / 48 * i, 'hh24:mi') ||
+                         '前'' and 类别=''故障'' then 1 else null end) ' ||
+                         to_char(trunc(sysdate) + 1 / 48 * i, 'hh24mi') || '故障' ||
+                         to_char(i - 16) || ',');
+  end loop;
+end;
+
+--打印出来的脚本
 select * from (
 with aim_table as(select 代维公司,代维分局,姓名,类别,
        to_char(trunc(操作时间) +
@@ -76,30 +104,3 @@ count(case when 时间段='00:00前' and 类别='装机' then 1 else null end) 装机32,
 count(case when 时间段='00:00前' and 类别='故障' then 1 else null end) 故障32
 from aim_table group by 代维公司,代维分局,姓名 order by 代维公司,代维分局)
 where 装机总+故障总>0;
-
---pivot方法实例-但适用版本 < oracle 11g
-select *
-  from (select 代维公司,代维分局,姓名,类别,
-               to_char(trunc(sysdate) +
-                       30 / 1440 *
-                       ceil((操作时间 - trunc(sysdate)) / (30 / 1440)),
-                       'hh24:mi"前"') as 时间段
-          from yunwei.productivity@family t
-         where trunc(t.操作时间) = trunc(sysdate))
- pivot(count(decode(类别,'故障',1,null)) as zj,count(decode(类别,'装机',1,null)) as wh for 时间段 in ('08:30前', '09:00前'));
- 
---利用循环打印查询条件
-begin
-  for i in 17 .. 48 loop
-    dbms_output.put_line('count(case when 时间段=''' ||
-                         to_char(trunc(sysdate) + 1 / 48 * i, 'hh24:mi') ||
-                         '前'' and 类别=''装机'' then 1 else null end) ' ||
-                         to_char(trunc(sysdate) + 1 / 48 * i, 'hh24mi') || '装机' ||
-                         to_char(i - 16) || ',');
-    dbms_output.put_line('count(case when 时间段=''' ||
-                         to_char(trunc(sysdate) + 1 / 48 * i, 'hh24:mi') ||
-                         '前'' and 类别=''故障'' then 1 else null end) ' ||
-                         to_char(trunc(sysdate) + 1 / 48 * i, 'hh24mi') || '故障' ||
-                         to_char(i - 16) || ',');
-  end loop;
-end;
