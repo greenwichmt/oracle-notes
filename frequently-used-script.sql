@@ -51,6 +51,8 @@ purge table OPT_FSCQ9944_20160919110326;
 where t.serial_number in或者not in时候（子查询要加上where ...not null）!!
 select * from recyclebin where 1 = 1 AND regexp_like(object_name, '^BIN[$]{1}.*==\$0$')
 
+oracle job 失败16次后，系统自动执行exec dbms_job.broken(job编号,false)让job失效
+
 
 
 
